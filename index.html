@@ -82,9 +82,21 @@
                     Print
                 </button>
                 <div class="menu-divider"></div>
-                <button type="button" class="menu-dropdown-item" id="menu-file-export-html" role="menuitem">
-                    Export HTML
-                </button>
+                <div class="menu-dropdown-item-group" role="none">
+                    <button type="button" class="menu-dropdown-item" id="menu-file-export-group" aria-haspopup="true"
+                        aria-expanded="false" style="justify-content: space-between">
+                        <span>Export</span>
+                        <span class="material-symbols-rounded icon-18">chevron_right</span>
+                    </button>
+                    <div class="menu-submenu" role="menu" aria-label="Export">
+                        <button type="button" class="menu-dropdown-item" id="menu-file-export-html" role="menuitem">
+                            HTML
+                        </button>
+                        <button type="button" class="menu-dropdown-item" id="menu-file-export-pdf" role="menuitem">
+                            PDF
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="menu-item dropdown" id="menu-edit" role="menuitem" tabindex="0" aria-haspopup="true"
@@ -118,10 +130,6 @@
                 </button>
                 <button type="button" class="menu-dropdown-item" id="menu-edit-goto" role="menuitem">
                     Go To Line
-                </button>
-                <div class="menu-divider"></div>
-                <button type="button" class="menu-dropdown-item" id="menu-edit-search-google" role="menuitem">
-                    Search with Google
                 </button>
             </div>
         </div>
@@ -322,10 +330,96 @@
                         <div class="menu-divider"></div>
                         <button type="button" class="menu-dropdown-item" id="btn-table-manual" role="menuitem">
                             <span><span class="material-symbols-rounded menu-icon">grid_on</span>
-                                Insert Table</span>
+                                Custom Size</span>
                         </button>
 
                         <div class="menu-divider"></div>
+
+                        <!-- Edit Table Submenu -->
+                        <div class="menu-dropdown-item-group" role="none">
+                            <button type="button" class="menu-dropdown-item" id="btn-table-edit-group"
+                                aria-haspopup="true" aria-expanded="false" style="justify-content: space-between">
+                                <span><span class="material-symbols-rounded menu-icon">edit</span>
+                                    Edit Table</span>
+                                <span class="material-symbols-rounded icon-18">chevron_right</span>
+                            </button>
+                            <div class="menu-submenu" role="menu" aria-label="Table Edit">
+                                <div class="menu-dropdown-item-group" role="none">
+                                    <button type="button" class="menu-dropdown-item" id="btn-table-select-group"
+                                        aria-haspopup="true" aria-expanded="false" style="justify-content: space-between">
+                                        <span><span class="material-symbols-rounded menu-icon">select_all</span>
+                                            Select</span>
+                                        <span class="material-symbols-rounded icon-18">chevron_right</span>
+                                    </button>
+                                    <div class="menu-submenu" role="menu" aria-label="Select Table">
+                                        <button type="button" class="menu-dropdown-item" id="btn-table-select" role="menuitem">
+                                            <span class="material-symbols-rounded menu-icon">table_chart</span>
+                                            Table
+                                        </button>
+                                        <button type="button" class="menu-dropdown-item" id="btn-table-select-row" role="menuitem">
+                                            <span class="material-symbols-rounded menu-icon">table_rows</span>
+                                            Row
+                                        </button>
+                                        <button type="button" class="menu-dropdown-item" id="btn-table-select-column" role="menuitem">
+                                            <span class="material-symbols-rounded menu-icon">view_column</span>
+                                            Column
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="menu-dropdown-item-group" role="none">
+                                    <button type="button" class="menu-dropdown-item" id="btn-table-rows-group"
+                                        aria-haspopup="true" aria-expanded="false" style="justify-content: space-between">
+                                        <span><span class="material-symbols-rounded menu-icon">table_rows</span>
+                                            Rows</span>
+                                        <span class="material-symbols-rounded icon-18">chevron_right</span>
+                                    </button>
+                                    <div class="menu-submenu" role="menu" aria-label="Table Rows">
+                                        <button type="button" class="menu-dropdown-item" id="btn-table-add-row-above" role="menuitem">
+                                            <span class="material-symbols-rounded menu-icon">arrow_upward</span>
+                                            Add Above
+                                        </button>
+                                        <button type="button" class="menu-dropdown-item" id="btn-table-add-row-below" role="menuitem">
+                                            <span class="material-symbols-rounded menu-icon">arrow_downward</span>
+                                            Add Below
+                                        </button>
+                                        <button type="button" class="menu-dropdown-item" id="btn-table-remove-row" role="menuitem">
+                                            <span class="material-symbols-rounded menu-icon">remove</span>
+                                            Remove Row
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="menu-dropdown-item-group" role="none">
+                                    <button type="button" class="menu-dropdown-item" id="btn-table-columns-group"
+                                        aria-haspopup="true" aria-expanded="false" style="justify-content: space-between">
+                                        <span><span class="material-symbols-rounded menu-icon">view_column</span>
+                                            Columns</span>
+                                        <span class="material-symbols-rounded icon-18">chevron_right</span>
+                                    </button>
+                                    <div class="menu-submenu" role="menu" aria-label="Table Columns">
+                                        <button type="button" class="menu-dropdown-item" id="btn-table-add-col-left" role="menuitem">
+                                            <span class="material-symbols-rounded menu-icon">arrow_back</span>
+                                            Add Left
+                                        </button>
+                                        <button type="button" class="menu-dropdown-item" id="btn-table-add-col-right" role="menuitem">
+                                            <span class="material-symbols-rounded menu-icon">arrow_forward</span>
+                                            Add Right
+                                        </button>
+                                        <button type="button" class="menu-dropdown-item" id="btn-table-remove-col" role="menuitem">
+                                            <span class="material-symbols-rounded menu-icon">remove</span>
+                                            Remove Column
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="menu-divider"></div>
+                                <button type="button" class="menu-dropdown-item" id="btn-table-delete" role="menuitem">
+                                    <span class="material-symbols-rounded menu-icon">delete</span>
+                                    Delete Table
+                                </button>
+                            </div>
+                        </div>
 
                         <!-- Align Table Submenu -->
                         <div class="menu-dropdown-item-group" role="none">
@@ -612,13 +706,13 @@
                             color: var(--color-text-secondary);
                             margin-bottom: 2px;
                         ">
-                    Version 1.3.8
+                    Version 1.4.0
                 </div>
                 <div style="
                             color: var(--color-text-secondary);
                             margin-bottom: 15px;
                         " id="about-build-number">
-                    Build 6517
+                    Build 6801
                 </div>
 
                 <div style="
@@ -659,7 +753,7 @@
         let undoStack = [""];
         let redoStack = [];
         let currentViewMode = "split";
-        let BUILD_NUMBER = "6517";
+        let BUILD_NUMBER = "6801";
         let _editorInitialized = false;
         let _domContentInitialized = false;
         let trapTab = true;
@@ -842,6 +936,89 @@
                 .getElementById("btn-image")
                 .addEventListener("click", insertImage);
 
+            // Table Edit Submenu
+            document
+                .getElementById("btn-table-edit-group")
+                .addEventListener("click", function (e) {
+                    e.stopPropagation();
+                });
+            ["btn-table-select-group", "btn-table-rows-group", "btn-table-columns-group"].forEach((id) => {
+                document.getElementById(id).addEventListener("click", function (e) {
+                    e.stopPropagation();
+                });
+            });
+            document
+                .getElementById("btn-table-select")
+                .addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    selectTable();
+                    closeAllMenus();
+                });
+            document
+                .getElementById("btn-table-select-row")
+                .addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    selectTableRow();
+                    closeAllMenus();
+                });
+            document
+                .getElementById("btn-table-select-column")
+                .addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    selectTableColumn();
+                    closeAllMenus();
+                });
+            document
+                .getElementById("btn-table-add-row-above")
+                .addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    addTableRow("above");
+                    closeAllMenus();
+                });
+            document
+                .getElementById("btn-table-add-row-below")
+                .addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    addTableRow("below");
+                    closeAllMenus();
+                });
+            document
+                .getElementById("btn-table-remove-row")
+                .addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    removeTableRow();
+                    closeAllMenus();
+                });
+            document
+                .getElementById("btn-table-add-col-left")
+                .addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    addTableColumn("left");
+                    closeAllMenus();
+                });
+            document
+                .getElementById("btn-table-add-col-right")
+                .addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    addTableColumn("right");
+                    closeAllMenus();
+                });
+            document
+                .getElementById("btn-table-remove-col")
+                .addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    removeTableColumn();
+                    closeAllMenus();
+                });
+            document
+                .getElementById("btn-table-delete")
+                .addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    deleteTable();
+                    closeAllMenus();
+                });
+
+
             // Table Alignment
             document
                 .getElementById("btn-align-table-group")
@@ -966,11 +1143,22 @@
                     printDocument();
                     closeAllMenus();
                 });
-            // Export action
+            // Export submenu (parent row: stopPropagation like Theme submenu)
+            document
+                .getElementById("menu-file-export-group")
+                .addEventListener("click", function (e) {
+                    e.stopPropagation();
+                });
             document
                 .getElementById("menu-file-export-html")
                 .addEventListener("click", function (e) {
                     exportHTML();
+                    closeAllMenus();
+                });
+            document
+                .getElementById("menu-file-export-pdf")
+                .addEventListener("click", function (e) {
+                    exportPDF();
                     closeAllMenus();
                 });
 
@@ -1020,29 +1208,9 @@
                         closeAllMenus();
                     }
                 });
-            document
-                .getElementById("menu-edit-search-google")
-                .addEventListener("click", function () {
-                    if (!this.hasAttribute("disabled")) {
-                        searchWithGoogle();
-                        closeAllMenus();
-                    }
-                });
 
             // Update all Edit menu items state
             function updateEditMenuStates() {
-                // Search with Google
-                const btnGoogle = document.getElementById(
-                    "menu-edit-search-google",
-                );
-                if (btnGoogle) {
-                    if (editor.selectionStart !== editor.selectionEnd) {
-                        btnGoogle.removeAttribute("disabled");
-                    } else {
-                        btnGoogle.setAttribute("disabled", "true");
-                    }
-                }
-
                 // Clear Formatting
                 const btnClear = document.getElementById(
                     "menu-edit-clear-format",
