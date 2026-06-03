@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MARKDOWN EDITOR STYLES - Build 6801
+   MARKDOWN EDITOR STYLES - Build 6510
    ========================================================================== */
 
 /* ============================================
@@ -526,7 +526,7 @@ input[type="radio"] {
     cursor: pointer;
     font-size: 13px;
     color: var(--color-text-primary);
-    gap: var(--space-sm);
+    gap: var(--space-xs);
 }
 
 /* apply extra left offset only to items that may show a checkmark */

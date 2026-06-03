@@ -1,7 +1,7 @@
 // ========================================
 // MARKDOWN EDITOR - CORE FUNCTIONS
 // function.js
-// Build 6801
+// Build 6500
 // ========================================
 // This file contains all core markdown processing,
 // formatting, and utility functions for the editor.
@@ -2159,6 +2159,15 @@ function highlightMatches() {
 	textNodes.forEach((node) => {
 		highlightTextNode(node, regex);
 	});
+
+	// 5. Highlight active/current match and scroll it into view in the preview
+	const allMarks = preview.querySelectorAll("span.md-match");
+	const activeIndex = toggleFindReplaceState.currentIndex;
+	if (allMarks.length > 0 && activeIndex >= 0 && activeIndex < allMarks.length) {
+		const activeMatch = allMarks[activeIndex];
+		activeMatch.classList.add("md-match-current");
+		activeMatch.scrollIntoView({ behavior: "smooth", block: "nearest" });
+	}
 }
 
 /**
