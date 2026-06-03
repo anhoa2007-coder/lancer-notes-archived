@@ -1,7 +1,7 @@
 // ========================================
 // MARKDOWN EDITOR - CORE FUNCTIONS
 // function.js
-// Build 6500
+// Build 6803
 // ========================================
 // This file contains all core markdown processing,
 // formatting, and utility functions for the editor.
@@ -428,6 +428,355 @@ function insertTable(cols = 2, rows = 2) {
 }
 
 /**
+ * True if the line is a GitHub-flavored markdown table separator (alignment row).
+ * e.g. | --- | :---: | ---: |
+ */
+function isMarkdownTableSeparatorRow(line) {
+	const trimmed = line.trim();
+	if (!trimmed.includes("|")) return false;
+	const cells = trimmed
+		.split("|")
+		.map((c) => c.trim())
+		.filter((c) => c.length > 0);
+	if (cells.length === 0) return false;
+	return cells.every((c) => /^:?-{3,}:?$/.test(c));
+}
+
+function getTableBlockBounds() {
+	const start = editor.selectionStart;
+	const text = editor.value;
+
+	function isTableLine(line) {
+		const trimmed = line.trim();
+		return (
+			trimmed.startsWith("|") ||
+			isMarkdownTableSeparatorRow(trimmed) ||
+			/^\s*\|?[-:]+\|?\s*$/.test(trimmed)
+		);
+	}
+
+	let blockStart = text.lastIndexOf("\n", start - 1) + 1;
+	if (blockStart < 0) blockStart = 0;
+
+	while (blockStart > 0) {
+		const prevLineEnd = blockStart - 1;
+		const prevLineStart = text.lastIndexOf("\n", prevLineEnd - 1) + 1;
+		const prevLine = text.substring(prevLineStart, prevLineEnd);
+		if (prevLine.trim() === "") break;
+		if (isTableLine(prevLine)) {
+			blockStart = prevLineStart;
+			continue;
+		}
+		break;
+	}
+
+	let blockEnd = text.indexOf("\n", start);
+	if (blockEnd === -1) blockEnd = text.length;
+
+	while (blockEnd < text.length) {
+		const nextLineStart = blockEnd + 1;
+		const nextLineEnd = text.indexOf("\n", nextLineStart);
+		const actualEnd = nextLineEnd === -1 ? text.length : nextLineEnd;
+		const nextLine = text.substring(nextLineStart, actualEnd);
+		if (nextLine.trim() === "") break;
+		if (isTableLine(nextLine)) {
+			blockEnd = actualEnd;
+			continue;
+		}
+		break;
+	}
+
+	const tableBlock = text.substring(blockStart, blockEnd);
+	const hasSeparator = tableBlock.split("\n").some((line) => isMarkdownTableSeparatorRow(line));
+	if (!tableBlock.includes("|") || !hasSeparator) {
+		return null;
+	}
+
+	return { blockStart, blockEnd, tableBlock };
+}
+
+function parseTableRowCells(line) {
+	const trimmed = line.trim();
+	const leading = trimmed.startsWith("|");
+	const trailing = trimmed.endsWith("|");
+	const parts = line.split("|");
+
+	let cells;
+	if (leading && trailing && parts.length >= 2) {
+		cells = parts.slice(1, -1);
+	} else if (leading) {
+		cells = parts.slice(1);
+	} else {
+		cells = parts;
+	}
+
+	return { cells, leading, trailing };
+}
+
+function formatTableRow(cells, leading = true, trailing = true) {
+	if (leading && trailing) {
+		return cells.reduce((row, cell) => row + cell + "|", "|");
+	}
+	return cells.map((c) => c.trim()).join(" | ");
+}
+
+function getTableColumnCount(lines, separatorIndex) {
+	return parseTableRowCells(lines[separatorIndex]).cells.length;
+}
+
+function getTableLineStart(blockStart, lines, lineIndex) {
+	if (lineIndex <= 0) return blockStart;
+	return blockStart + lines.slice(0, lineIndex).join("\n").length + 1;
+}
+
+function getColumnIndexAtPosition(line, offsetInLine) {
+	const pipeIndices = [];
+	for (let i = 0; i < line.length; i++) {
+		if (line[i] === "|") pipeIndices.push(i);
+	}
+	if (pipeIndices.length < 2) return 0;
+
+	for (let c = 0; c < pipeIndices.length - 1; c++) {
+		if (offsetInLine > pipeIndices[c] && offsetInLine <= pipeIndices[c + 1]) {
+			return c;
+		}
+	}
+	if (offsetInLine <= pipeIndices[0]) return 0;
+	return pipeIndices.length - 2;
+}
+
+function getCellRangeInLine(line, colIndex, lineStart) {
+	const pipeIndices = [];
+	for (let i = 0; i < line.length; i++) {
+		if (line[i] === "|") pipeIndices.push(i);
+	}
+	if (pipeIndices.length < colIndex + 2) return null;
+
+	return {
+		start: lineStart + pipeIndices[colIndex] + 1,
+		end: lineStart + pipeIndices[colIndex + 1],
+	};
+}
+
+function getTableCursorContext() {
+	const bounds = getTableBlockBounds();
+	if (!bounds) return null;
+
+	const start = editor.selectionStart;
+	const lines = bounds.tableBlock.split("\n");
+	const separatorIndex = lines.findIndex((line) => isMarkdownTableSeparatorRow(line));
+	if (separatorIndex === -1) return null;
+
+	const lineStarts = lines.map((_, i) => getTableLineStart(bounds.blockStart, lines, i));
+
+	let rowIndex = 0;
+	for (let i = 0; i < lines.length; i++) {
+		const lineEnd = lineStarts[i] + lines[i].length;
+		if (start >= lineStarts[i] && start <= lineEnd) {
+			rowIndex = i;
+			break;
+		}
+	}
+
+	const colCount = getTableColumnCount(lines, separatorIndex);
+	const offsetInLine = start - lineStarts[rowIndex];
+	const colIndex = Math.min(getColumnIndexAtPosition(lines[rowIndex], offsetInLine), colCount - 1);
+	const rowStyle = parseTableRowCells(lines[separatorIndex]);
+
+	return {
+		bounds,
+		lines,
+		separatorIndex,
+		rowIndex,
+		colIndex,
+		colCount,
+		lineStarts,
+		rowStyle,
+	};
+}
+
+function requireTableContext(actionLabel) {
+	const ctx = getTableCursorContext();
+	if (!ctx) {
+		showAlert(`Place the cursor inside a table to ${actionLabel}.`);
+	}
+	return ctx;
+}
+
+function commitTableEdit(bounds, lines, selStart, selEnd) {
+	const newBlock = lines.join("\n");
+	editor.setRangeText(newBlock, bounds.blockStart, bounds.blockEnd, "end");
+	editor.setSelectionRange(selStart, selEnd ?? selStart);
+	saveToUndoStack();
+	editor.focus();
+	updatePreview();
+	updateStatusBar();
+}
+
+function newSeparatorCell(referenceCell) {
+	if (!referenceCell || referenceCell.trim() === "") return " --- ";
+	const t = referenceCell.trim();
+	const leftAlign = t.startsWith(":");
+	const rightAlign = t.endsWith(":");
+	if (leftAlign && rightAlign) return " :---: ";
+	if (rightAlign) return " ---: ";
+	if (leftAlign) return " :--- ";
+	return " --- ";
+}
+
+function selectTable() {
+	const bounds = getTableBlockBounds();
+	if (!bounds) {
+		showAlert("Place the cursor inside a table to select it.");
+		return;
+	}
+
+	editor.focus();
+	editor.setSelectionRange(bounds.blockStart, bounds.blockEnd);
+}
+
+function selectTableRow() {
+	const ctx = requireTableContext("select a row");
+	if (!ctx) return;
+
+	const { lineStarts, lines, rowIndex } = ctx;
+	const start = lineStarts[rowIndex];
+	const end = start + lines[rowIndex].length;
+	editor.focus();
+	editor.setSelectionRange(start, end);
+}
+
+function selectTableColumn() {
+	const ctx = requireTableContext("select a column");
+	if (!ctx) return;
+
+	const { lineStarts, lines, colIndex } = ctx;
+	const firstLine = 0;
+	const lastLine = lines.length - 1;
+	const firstRange = getCellRangeInLine(lines[firstLine], colIndex, lineStarts[firstLine]);
+	const lastRange = getCellRangeInLine(lines[lastLine], colIndex, lineStarts[lastLine]);
+	if (!firstRange || !lastRange) {
+		showAlert("Could not determine the column at the cursor.");
+		return;
+	}
+
+	editor.focus();
+	editor.setSelectionRange(firstRange.start, lastRange.end);
+}
+
+function deleteTable() {
+	const bounds = getTableBlockBounds();
+	if (!bounds) {
+		showAlert("Place the cursor inside a table to delete it.");
+		return;
+	}
+
+	const text = editor.value;
+	let replacement = "";
+	if (bounds.blockStart > 0 && text[bounds.blockStart - 1] === "\n" && text[bounds.blockEnd] === "\n") {
+		replacement = "\n";
+	}
+
+	editor.setRangeText(replacement, bounds.blockStart, bounds.blockEnd, "start");
+	saveToUndoStack();
+	editor.focus();
+	updatePreview();
+	updateStatusBar();
+}
+
+function addTableRow(position) {
+	const ctx = requireTableContext("add a row");
+	if (!ctx) return;
+
+	const { bounds, lines, rowIndex, separatorIndex, rowStyle, colCount } = ctx;
+	let insertIndex = position === "above" ? rowIndex : rowIndex + 1;
+	if (rowIndex === separatorIndex && position === "above") {
+		insertIndex = separatorIndex;
+	} else if (rowIndex === separatorIndex) {
+		insertIndex = separatorIndex + 1;
+	}
+
+	const newCells = Array(colCount).fill("   ");
+	const newLine = formatTableRow(newCells, rowStyle.leading, rowStyle.trailing);
+	lines.splice(insertIndex, 0, newLine);
+
+	const newLineStart = getTableLineStart(bounds.blockStart, lines, insertIndex);
+	const cellRange = getCellRangeInLine(newLine, ctx.colIndex, newLineStart);
+	commitTableEdit(bounds, lines, cellRange?.start ?? newLineStart, cellRange?.end ?? newLineStart + newLine.length);
+}
+
+function removeTableRow() {
+	const ctx = requireTableContext("remove a row");
+	if (!ctx) return;
+
+	const { bounds, lines, rowIndex, separatorIndex } = ctx;
+
+	if (rowIndex === separatorIndex) {
+		showAlert("Cannot remove the alignment row.");
+		return;
+	}
+	if (lines.length <= 2) {
+		showAlert("Table must keep at least a header and alignment row.");
+		return;
+	}
+
+	lines.splice(rowIndex, 1);
+
+	let focusRow = rowIndex;
+	if (focusRow >= lines.length) focusRow = lines.length - 1;
+	const newLineStart = getTableLineStart(bounds.blockStart, lines, focusRow);
+	const cellRange = getCellRangeInLine(lines[focusRow], ctx.colIndex, newLineStart);
+	commitTableEdit(bounds, lines, cellRange?.start ?? newLineStart, cellRange?.end ?? newLineStart + lines[focusRow].length);
+}
+
+function addTableColumn(position) {
+	const ctx = requireTableContext("add a column");
+	if (!ctx) return;
+
+	const { bounds, lines, colIndex, rowStyle } = ctx;
+	const insertAt = position === "left" ? colIndex : colIndex + 1;
+
+	for (let i = 0; i < lines.length; i++) {
+		const { cells, leading, trailing } = parseTableRowCells(lines[i]);
+		if (isMarkdownTableSeparatorRow(lines[i])) {
+			const ref = cells[insertAt > 0 ? insertAt - 1 : insertAt] ?? cells[0];
+			cells.splice(insertAt, 0, newSeparatorCell(ref));
+		} else {
+			cells.splice(insertAt, 0, "   ");
+		}
+		lines[i] = formatTableRow(cells, leading, trailing);
+	}
+
+	const newLineStart = getTableLineStart(bounds.blockStart, lines, ctx.rowIndex);
+	const cellRange = getCellRangeInLine(lines[ctx.rowIndex], insertAt, newLineStart);
+	commitTableEdit(bounds, lines, cellRange?.start ?? newLineStart, cellRange?.end ?? newLineStart + lines[ctx.rowIndex].length);
+}
+
+function removeTableColumn() {
+	const ctx = requireTableContext("remove a column");
+	if (!ctx) return;
+
+	const { bounds, lines, colIndex, colCount } = ctx;
+	if (colCount <= 1) {
+		showAlert("Cannot remove the only column.");
+		return;
+	}
+
+	for (let i = 0; i < lines.length; i++) {
+		const { cells, leading, trailing } = parseTableRowCells(lines[i]);
+		if (colIndex >= cells.length) continue;
+		cells.splice(colIndex, 1);
+		lines[i] = formatTableRow(cells, leading, trailing);
+	}
+
+	const focusCol = colIndex >= colCount - 1 ? colCount - 2 : colIndex;
+	const newLineStart = getTableLineStart(bounds.blockStart, lines, ctx.rowIndex);
+	const cellRange = getCellRangeInLine(lines[ctx.rowIndex], focusCol, newLineStart);
+	commitTableEdit(bounds, lines, cellRange?.start ?? newLineStart, cellRange?.end ?? newLineStart + lines[ctx.rowIndex].length);
+}
+
+
+/**
  * Initialize table grid selector
  */
 function initTableGrid() {
@@ -555,52 +904,25 @@ function initTableManual() {
  * @param {string} alignment - 'left', 'center', or 'right'
  */
 function alignTable(alignment) {
-	const start = editor.selectionStart;
-	const text = editor.value;
-
-	// 1. Identify the table block bounds
-	// Search backwards for table start
-	let blockStart = text.lastIndexOf("\n", start - 1) + 1;
-	while (blockStart > 0) {
-		const prevLineEnd = blockStart - 1;
-		const prevLineStart = text.lastIndexOf("\n", prevLineEnd - 1) + 1;
-		const prevLine = text.substring(prevLineStart, prevLineEnd);
-		if (!prevLine.trim().startsWith("|")) {
-			break;
-		}
-		blockStart = prevLineStart;
+	const bounds = getTableBlockBounds();
+	if (!bounds) {
+		showAlert("Place the cursor inside a table to change alignment.");
+		return;
 	}
 
-	// Search forwards for table end
-	let blockEnd = text.indexOf("\n", start);
-	if (blockEnd === -1) blockEnd = text.length;
-	while (blockEnd < text.length) {
-		const nextLineEnd = text.indexOf("\n", blockEnd + 1);
-		const actualEnd = nextLineEnd === -1 ? text.length : nextLineEnd;
-		const nextLine = text.substring(blockEnd + 1, actualEnd);
-		if (!nextLine.trim().startsWith("|")) {
-			break;
-		}
-		blockEnd = actualEnd;
-	}
-
-	// 2. Extract table lines
-	const tableBlock = text.substring(blockStart, blockEnd);
+	const { blockStart, blockEnd, tableBlock } = bounds;
 	const lines = tableBlock.split("\n");
 
-	// 3. Find separator row (must start with | and contain mostly -)
+	// Find separator row
 	let separatorIndex = -1;
 	for (let i = 0; i < lines.length; i++) {
-		const trimmed = lines[i].trim();
-		// Simple check: starts with | and contains - and maybe :
-		if (/^\|\s*:?-+:?\s*\|/.test(trimmed)) {
+		if (isMarkdownTableSeparatorRow(lines[i])) {
 			separatorIndex = i;
 			break;
 		}
 	}
 
 	if (separatorIndex === -1) {
-		// No valid separator found, maybe not a table or cursor not in table
 		return;
 	}
 
@@ -1354,17 +1676,26 @@ function gatherExportStyles() {
 }
 
 /**
- * Creates a standalone HTML file containing the preview content and
- * all necessary styles, then triggers a download.
+ * Derive a base filename for exports from the current file, if any.
  */
-function exportHTML() {
-		// make sure preview is current
-		updatePreview();
+function getExportBaseFilename() {
+	if (currentFile) {
+		const dot = currentFile.lastIndexOf(".");
+		return dot > 0 ? currentFile.substring(0, dot) : currentFile;
+	}
+	return "document";
+}
 
-		const { stylesToInline, externalLinksHtml } = gatherExportStyles();
-		const htmlClass = document.documentElement.className;
+/**
+ * Build standalone HTML for export (HTML file or PDF rendering).
+ */
+function buildExportHtmlContent() {
+	updatePreview();
 
-		const htmlContent = `<!DOCTYPE html>
+	const { stylesToInline, externalLinksHtml } = gatherExportStyles();
+	const htmlClass = document.documentElement.className;
+
+	return `<!DOCTYPE html>
 <html lang="en" class="${htmlClass}">
 <head>
 		<meta charset="UTF-8">
@@ -1388,17 +1719,105 @@ ${stylesToInline}
 		</div>
 </body>
 </html>`;
+}
 
+/**
+ * Lazy-load html2pdf.js only when exporting to PDF.
+ */
+function loadHtml2Pdf() {
+	if (window.html2pdf) {
+		return Promise.resolve();
+	}
+
+	return new Promise((resolve, reject) => {
+		const script = document.createElement("script");
+		script.src =
+			"https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+		script.onload = () => resolve();
+		script.onerror = () => reject(new Error("Failed to load PDF export library"));
+		document.head.appendChild(script);
+	});
+}
+
+/**
+ * Creates a standalone HTML file containing the preview content and
+ * all necessary styles, then triggers a download.
+ */
+function exportHTML() {
+		const htmlContent = buildExportHtmlContent();
 		const blob = new Blob([htmlContent], { type: "text/html" });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = "document.html";
+		a.download = `${getExportBaseFilename()}.html`;
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
 		URL.revokeObjectURL(url);
 		updateStatus("Exported HTML");
+}
+
+/**
+ * Render the exported document to PDF and trigger a download.
+ */
+async function exportPDF() {
+		updateStatus("Exporting PDF...");
+
+		try {
+				await loadHtml2Pdf();
+		} catch (err) {
+				console.error("PDF library load error:", err);
+				showAlert(
+						"Could not load the PDF export library. Check your internet connection and try again."
+				);
+				updateStatus("PDF export failed");
+				return;
+		}
+
+		const htmlContent = buildExportHtmlContent();
+		const iframe = document.createElement("iframe");
+		iframe.setAttribute("aria-hidden", "true");
+		iframe.style.cssText =
+				"position:fixed;left:-10000px;top:0;width:800px;height:0;border:0;visibility:hidden";
+		document.body.appendChild(iframe);
+
+		try {
+				const doc = iframe.contentDocument;
+				doc.open();
+				doc.write(htmlContent);
+				doc.close();
+
+				await new Promise((resolve) => {
+						iframe.onload = resolve;
+						if (doc.readyState === "complete") {
+								resolve();
+						}
+				});
+
+				if (doc.fonts && doc.fonts.ready) {
+						await doc.fonts.ready;
+				}
+
+				await html2pdf()
+						.set({
+								margin: [10, 10, 10, 10],
+								filename: `${getExportBaseFilename()}.pdf`,
+								image: { type: "jpeg", quality: 0.98 },
+								html2canvas: { scale: 2, useCORS: true, logging: false },
+								jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+								pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+						})
+						.from(doc.body)
+						.save();
+
+				updateStatus("Exported PDF");
+		} catch (err) {
+				console.error("PDF export error:", err);
+				showAlert("Failed to export PDF. See the browser console for details.");
+				updateStatus("PDF export failed");
+		} finally {
+				document.body.removeChild(iframe);
+		}
 }
 
 // ========================================
@@ -1740,6 +2159,15 @@ function highlightMatches() {
 	textNodes.forEach((node) => {
 		highlightTextNode(node, regex);
 	});
+
+	// 5. Highlight active/current match and scroll it into view in the preview
+	const allMarks = preview.querySelectorAll("span.md-match");
+	const activeIndex = toggleFindReplaceState.currentIndex;
+	if (allMarks.length > 0 && activeIndex >= 0 && activeIndex < allMarks.length) {
+		const activeMatch = allMarks[activeIndex];
+		activeMatch.classList.add("md-match-current");
+		activeMatch.scrollIntoView({ behavior: "smooth", block: "nearest" });
+	}
 }
 
 /**
@@ -3241,22 +3669,6 @@ function syncEditor() {
 // EXTERNAL SERVICES
 // ========================================
 
-/**
- * Search selected text with Google
- */
-function searchWithGoogle() {
-	const start = editor.selectionStart;
-	const end = editor.selectionEnd;
-	const selectedText = editor.value.substring(start, end);
-
-	if (selectedText) {
-		const query = encodeURIComponent(selectedText);
-		const url = `https://www.google.com/search?q=${query}`;
-		// Open safely
-		const win = window.open(url, "_blank");
-		if (win) win.focus();
-	}
-}
 
 // ========================================
 // ANIMATION UTILS

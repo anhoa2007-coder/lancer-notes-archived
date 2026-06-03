@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MARKDOWN EDITOR STYLES - Build 6510
+   MARKDOWN EDITOR STYLES - Build 6803
    ========================================================================== */
 
 /* ============================================
@@ -27,12 +27,15 @@
     --color-accent-primary: #007acc;
     --color-accent-hover: #005a9e;
     --color-accent-darker: #003f6e;
+    --color-accent-text: var(--color-accent-primary);
+    --color-status-bar-bg: #005a9e;
 
     --color-link: #005a9e;
     --color-link-hover: #003f6e;
 
     --color-success: #22c55e;
     --color-danger: #cc0000;
+    --color-danger-text: var(--color-danger);
 
     /* Menu & Toolbar */
     --color-menu-bg: #e0e0e0;
@@ -156,9 +159,13 @@ html.dark-mode {
 
     --color-accent-primary: #005a9e;
     --color-accent-hover: #007acc;
+    --color-accent-text: #6eb5f7;
+    --color-status-bar-bg: var(--color-accent-primary);
 
     --color-link: #4fc3f7;
     --color-link-hover: #22d3ee;
+
+    --color-danger-text: #f87171;
 
     /* Menu & Toolbar matches dark mode specific */
     --color-menu-bg: #141617;
@@ -519,7 +526,7 @@ input[type="radio"] {
     cursor: pointer;
     font-size: 13px;
     color: var(--color-text-primary);
-    gap: var(--space-sm);
+    gap: var(--space-xs);
 }
 
 /* apply extra left offset only to items that may show a checkmark */
@@ -582,8 +589,9 @@ input[type="radio"] {
     margin-left: 2px;
 }
 
-.menu-dropdown-item-group:hover .menu-submenu,
-.menu-dropdown-item-group:focus-within .menu-submenu {
+/* Direct child only — avoids every nested flyout opening when hovering a parent panel */
+.menu-dropdown-item-group:hover > .menu-submenu,
+.menu-dropdown-item-group:focus-within > .menu-submenu {
     visibility: visible;
     opacity: 1;
     transform: translateX(0);
@@ -602,9 +610,13 @@ input[type="radio"] {
     transform: translateX(10px);
 }
 
-.menu-dropdown-item-group:hover .menu-submenu.open-left,
-.menu-dropdown-item-group:focus-within .menu-submenu.open-left {
+.menu-dropdown-item-group:hover > .menu-submenu.open-left,
+.menu-dropdown-item-group:focus-within > .menu-submenu.open-left {
     transform: translateX(0);
+}
+
+.menu-submenu .menu-submenu {
+    z-index: calc(var(--z-dropdown-menu) + 1);
 }
 
 .menu-item-no-padding {
@@ -989,7 +1001,7 @@ input[type="radio"] {
    STATUS BAR
    ============================================ */
 .status-bar {
-    background-color: var(--color-accent-primary);
+    background-color: var(--color-status-bar-bg);
     color: white;
     padding: var(--space-xs) var(--space-lg);
     font-size: 12px;
@@ -1319,7 +1331,7 @@ input[type="radio"] {
 
 .history-item .match-highlight {
     font-weight: bold;
-    color: var(--color-accent-primary);
+    color: var(--color-accent-text);
 }
 
 /* Icons in FR bar */
@@ -1960,7 +1972,7 @@ input[type="radio"] {
 }
 
 .recent-file-clear {
-    color: var(--color-danger) !important;
+    color: var(--color-danger-text) !important;
 }
 
 .recent-file-empty {
