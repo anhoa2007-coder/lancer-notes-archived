@@ -6,8 +6,7 @@ Since there's many users who want to stay supported against latest security issu
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.4.3   | Yes (Full support) |
-| 1.3.8 - 1.4.1 | Ending in July 31st |
+| 1.3.8 - 1.4.3 | Ending in July 31st |
 | 1.0.0 - 1.3.7  | Not supported* |
 
 ## Reporting a Vulnerability
