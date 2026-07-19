@@ -1254,79 +1254,6 @@ function showConfirm(message, onConfirm, title = "Confirm") {
 window.showAlert = showAlert;
 window.showConfirm = showConfirm;
 
-/* ========================================
-		 RECENT FILES LOGIC
-		 ======================================== */
-const MAX_RECENT_FILES = 10;
-const RECENT_FILES_KEY = "lancer-notes-recent-files";
-
-function getRecentFiles() {
-	try {
-		const list = localStorage.getItem(RECENT_FILES_KEY);
-		return list ? JSON.parse(list) : [];
-	} catch (e) {
-		return [];
-	}
-}
-
-function addRecentFile(filename) {
-	if (!filename) return;
-	let files = getRecentFiles();
-	files = files.filter(f => f.name !== filename); // Remove if exists
-	files.unshift({ name: filename, timestamp: Date.now() }); // Add to top
-	if (files.length > MAX_RECENT_FILES) {
-		files = files.slice(0, MAX_RECENT_FILES);
-	}
-	localStorage.setItem(RECENT_FILES_KEY, JSON.stringify(files));
-}
-
-function clearRecentFiles() {
-	localStorage.removeItem(RECENT_FILES_KEY);
-	renderRecentFilesMenu();
-}
-
-function formatRelativeTime(timestamp) {
-	const diff = Date.now() - timestamp;
-	const minute = 60 * 1000;
-	const hour = 60 * minute;
-	const day = 24 * hour;
-	
-	if (diff < minute) return "just now";
-	if (diff < hour) return Math.floor(diff / minute) + " mins ago";
-	if (diff < day) return Math.floor(diff / hour) + " hours ago";
-	if (diff < 2 * day) return "yesterday";
-	return Math.floor(diff / day) + " days ago";
-}
-
-function renderRecentFilesMenu() {
-	const container = document.getElementById("menu-recent-files-list");
-	if (!container) return;
-	
-	const files = getRecentFiles();
-	let html = "";
-	
-	if (files.length === 0) {
-		html += `<div class="menu-dropdown-item recent-file-empty">No recent files</div>`;
-	} else {
-		files.forEach(f => {
-			// Encode html entities for safety
-			const safeName = f.name.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-			html += `
-				<button type="button" class="menu-dropdown-item recent-file-item" onclick="openFile(); closeAllMenus();" title="${safeName}">
-					<span class="recent-file-name" title="${safeName}">${safeName}</span>
-					<span class="recent-file-time">${formatRelativeTime(f.timestamp)}</span>
-				</button>
-			`;
-		});
-		html += '<div class="menu-divider"></div>';
-		html += `<button type="button" class="menu-dropdown-item recent-file-clear" onclick="clearRecentFiles(); closeAllMenus();">Clear Recent Files</button>`;
-	}
-	
-	container.innerHTML = html;
-}
-
-window.clearRecentFiles = clearRecentFiles; // export for onclick
-
 /**
  * Open file dialog
  */
@@ -1353,7 +1280,6 @@ async function openFile() {
 			redoStack = [];
 			currentFile = file.name;
 			currentFileHandle = handle;
-			addRecentFile(file.name);
 			updatePreview();
 			updateStatusBar();
 			updateStatus(`Opened: ${file.name}`);
@@ -1382,7 +1308,6 @@ function handleFileSelect(e) {
 			redoStack = [];
 			currentFile = file.name;
 			currentFileHandle = null; // Clear handle as we can't write back to legacy input
-			addRecentFile(file.name);
 			updatePreview();
 			updateStatusBar();
 			updateStatus(`Opened: ${file.name}`);
@@ -1437,7 +1362,6 @@ async function saveAsFile() {
 			currentFileHandle = handle;
 			const file = await handle.getFile();
 			currentFile = file.name;
-			addRecentFile(file.name);
 			updateStatus(`Saved: ${currentFile}`);
 			dismissHelloPlaceholder();
 		} catch (err) {
@@ -1493,7 +1417,6 @@ function performSave(filenameToUse) {
 
 	// Update current file if we just saved it
 	currentFile = filename;
-	addRecentFile(filename);
 	updateStatus(`Saved: ${filename}`);
 	dismissHelloPlaceholder();
 }
@@ -3122,70 +3045,164 @@ function showDateTimeDialog() {
  */
 function showGoToDialog() {
 	const dialog = document.getElementById("goto-dialog");
-	const overlay = document.getElementById("popup-overlay");
 	const lineInput = document.getElementById("goto-line-input");
-	const okBtn = document.getElementById("goto-ok");
-	const cancelBtn = document.getElementById("goto-cancel");
+	const closeBtn = document.getElementById("goto-close");
+	if (!dialog || !lineInput || !closeBtn) return;
 
-	// Get total line count
-	const totalLines = editor.value.split("\n").length;
-	lineInput.max = totalLines;
+	// Save original selection and scroll position for canceling/reverting
+	const origStart = editor.selectionStart;
+	const origEnd = editor.selectionEnd;
+	const origScrollTop = editor.scrollTop;
+	const origScrollLeft = editor.scrollLeft;
+
+	// Clear previous input
 	lineInput.value = "";
 
-	showOverlay();
-	openDialogElement(dialog);
+	// Open dialog using flex layout
+	closeAllMenus();
+	dialog.style.display = "flex";
+	void dialog.offsetWidth; // Force reflow
+	dialog.classList.add("open");
 	lineInput.focus();
 
-	const handleGo = () => {
-		const lineNumber = parseInt(lineInput.value, 10);
-		if (lineNumber && lineNumber > 0 && lineNumber <= totalLines) {
-			// Calculate position of the line
-			const lines = editor.value.split("\n");
+	// Function to highlight and scroll to a specific line
+	const jumpToLine = (lineNumber) => {
+		const lines = editor.value.split("\n");
+		if (lineNumber > 0 && lineNumber <= lines.length) {
 			let position = 0;
 			for (let i = 0; i < lineNumber - 1; i++) {
 				position += lines[i].length + 1; // +1 for newline
 			}
+			const lineLength = lines[lineNumber - 1].length;
 
-			// Set cursor at the beginning of the line
-			editor.selectionStart = position;
-			editor.selectionEnd = position;
 			editor.focus();
+			editor.setSelectionRange(position, position + lineLength);
 
-			// Scroll to the cursor position
-			editor.blur();
-			editor.focus();
+			// Center the line in the editor viewport (line-height is 21px)
+			const lineHeight = 21;
+			const scrollTopPos = (lineNumber - 1) * lineHeight - (editor.clientHeight / 2) + (lineHeight / 2);
+			editor.scrollTop = Math.max(0, scrollTopPos);
 
-			updateStatus(`Jumped to line ${lineNumber}`);
+			// Return focus back to input so user can keep typing
+			lineInput.focus();
+			updateStatus(`Previewing line ${lineNumber}`);
 		}
-		closeDialog();
 	};
 
-	const handleCancel = () => {
-		closeDialog();
+	// Live input handler
+	const handleInput = () => {
+		const val = lineInput.value.trim();
+		if (val === "") {
+			// Restore original selection if input is cleared
+			editor.focus();
+			editor.setSelectionRange(origStart, origEnd);
+			editor.scrollTop = origScrollTop;
+			editor.scrollLeft = origScrollLeft;
+			lineInput.focus();
+			updateStatus("Go to line...");
+			return;
+		}
+
+		const lineNumber = parseInt(val, 10);
+		const totalLines = editor.value.split("\n").length;
+		if (!isNaN(lineNumber) && lineNumber > 0 && lineNumber <= totalLines) {
+			jumpToLine(lineNumber);
+		}
 	};
 
-	const closeDialog = () => {
-		hideOverlay();
-		closeDialogElement(dialog);
-		okBtn.onclick = null;
-		cancelBtn.onclick = null;
-		lineInput.onkeydown = null;
-		editor.focus();
+	// Close and clean up
+	const closeDialog = (revert) => {
+		dialog.classList.remove("open");
+		setTimeout(() => {
+			if (!dialog.classList.contains("open")) {
+				dialog.style.display = "none";
+			}
+		}, 250);
+
+		// Clean up event listeners
+		lineInput.removeEventListener("input", handleInput);
+		lineInput.removeEventListener("keydown", handleKeyDown);
+		closeBtn.removeEventListener("click", handleCloseClick);
+		document.removeEventListener("mousedown", handleOutsideClick);
+
+		if (revert) {
+			// Revert to original cursor & scroll position
+			editor.focus();
+			editor.setSelectionRange(origStart, origEnd);
+			editor.scrollTop = origScrollTop;
+			editor.scrollLeft = origScrollLeft;
+			updateStatus("Cancelled jump");
+		} else {
+			// Confirm current cursor & scroll position
+			const val = lineInput.value.trim();
+			const lineNumber = parseInt(val, 10);
+			const totalLines = editor.value.split("\n").length;
+			if (!isNaN(lineNumber) && lineNumber > 0 && lineNumber <= totalLines) {
+				jumpToLine(lineNumber);
+				updateStatus(`Jumped to line ${lineNumber}`);
+			} else {
+				// Revert if final value is invalid
+				editor.focus();
+				editor.setSelectionRange(origStart, origEnd);
+				editor.scrollTop = origScrollTop;
+				editor.scrollLeft = origScrollLeft;
+				updateStatus("Cancelled jump");
+			}
+			editor.focus();
+		}
+	};
+
+	const handleCloseClick = (e) => {
+		e.stopPropagation();
+		closeDialog(false); // Confirm jump like Enter
 	};
 
 	const handleKeyDown = (e) => {
 		if (e.key === "Enter") {
 			e.preventDefault();
-			handleGo();
+			closeDialog(false); // Confirm
 		} else if (e.key === "Escape") {
 			e.preventDefault();
-			handleCancel();
+			closeDialog(true); // Revert
+		} else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+			e.preventDefault();
+			const val = lineInput.value.trim();
+			let lineNumber = parseInt(val, 10);
+			const totalLines = editor.value.split("\n").length;
+
+			if (isNaN(lineNumber)) {
+				// If empty, start from current cursor line
+				lineNumber = editor.value.substring(0, editor.selectionStart).split("\n").length;
+			}
+
+			if (e.key === "ArrowUp") {
+				lineNumber = Math.max(1, lineNumber - 1);
+			} else {
+				lineNumber = Math.min(totalLines, lineNumber + 1);
+			}
+
+			lineInput.value = lineNumber;
+			jumpToLine(lineNumber);
 		}
 	};
 
-	okBtn.onclick = handleGo;
-	cancelBtn.onclick = handleCancel;
-	lineInput.onkeydown = handleKeyDown;
+	const handleOutsideClick = (e) => {
+		const btnGoto = document.getElementById("menu-edit-goto");
+		if (dialog.contains(e.target) || (btnGoto && btnGoto.contains(e.target))) {
+			return;
+		}
+		closeDialog(false); // Confirm
+	};
+
+	// Register event listeners
+	lineInput.addEventListener("input", handleInput);
+	lineInput.addEventListener("keydown", handleKeyDown);
+	closeBtn.addEventListener("click", handleCloseClick);
+
+	// Register click outside on mousedown using a timeout to avoid registering the current menu click
+	setTimeout(() => {
+		document.addEventListener("mousedown", handleOutsideClick);
+	}, 0);
 }
 
 /**

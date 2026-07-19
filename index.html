@@ -67,16 +67,6 @@
                     Save As... <span
                         style="margin-left: auto; color: var(--color-text-tertiary); font-size: 0.85em;">Ctrl+Shift+S</span>
                 </button>
-                <div class="menu-dropdown-item-group" role="none">
-                    <button type="button" class="menu-dropdown-item" id="menu-file-recent-group" aria-haspopup="true"
-                        aria-expanded="false" style="justify-content: space-between">
-                        <span>Recent Files</span>
-                        <span class="material-symbols-rounded icon-18">chevron_right</span>
-                    </button>
-                    <div class="menu-submenu" role="menu" aria-label="Recent Files" id="menu-recent-files-list">
-                        <!-- Populated by JavaScript -->
-                    </div>
-                </div>
                 <div class="menu-divider"></div>
                 <button type="button" class="menu-dropdown-item" id="menu-file-print" role="menuitem">
                     Print
@@ -515,11 +505,11 @@
                 <div id="find-history" class="history-dropdown"></div>
             </div>
             <button id="btn-find-prev" class="fr-btn" title="Previous">
-                ◀
+                <span class="material-symbols-rounded icon-18">chevron_left</span>
             </button>
             <span id="match-count" class="fr-count" aria-live="polite">0 / 0</span>
             <button id="btn-find-next" class="fr-btn" title="Next">
-                ▶
+                <span class="material-symbols-rounded icon-18">chevron_right</span>
             </button>
             <div class="fr-flag-dropdown" id="fr-flag-dropdown" tabindex="0" aria-haspopup="true" aria-expanded="false">
                 <button class="fr-btn fr-flag-btn" id="fr-flag-btn" aria-label="Search Options"
@@ -578,23 +568,9 @@
     </div>
 
     <!-- Go To Line Dialog -->
-    <div id="goto-dialog" class="generic-dialog dialog-400">
-        <h3 style="margin-top: 0">Go To Line</h3>
-        <div style="margin-bottom: 15px">
-            <label for="goto-line-input" style="display: block; margin-bottom: 5px">Line Number:</label>
-            <input id="goto-line-input" type="number" min="1" style="
-                        width: 100%;
-                        padding: 8px;
-                        font-size: 14px;
-                        border: 1px solid #ccc;
-                        border-radius: 4px;
-                        box-sizing: border-box;
-                    " />
-        </div>
-        <div class="dialog-actions">
-            <button id="goto-cancel">Cancel</button>
-            <button id="goto-ok" class="primary">Go</button>
-        </div>
+    <div id="goto-dialog" class="goto-dialog-container">
+        <input id="goto-line-input" type="number" min="1" placeholder="Go to..." autocomplete="off" />
+        <button id="goto-close" aria-label="Close">✕</button>
     </div>
 
     <!-- Overlay for popups -->
@@ -706,13 +682,13 @@
                             color: var(--color-text-secondary);
                             margin-bottom: 2px;
                         ">
-                    Version 1.3.8
+                    Version 1.5.0
                 </div>
                 <div style="
                             color: var(--color-text-secondary);
                             margin-bottom: 15px;
                         " id="about-build-number">
-                    Build 6517
+                    Build 6899
                 </div>
 
                 <div style="
@@ -753,7 +729,7 @@
         let undoStack = [""];
         let redoStack = [];
         let currentViewMode = "split";
-        let BUILD_NUMBER = "6517";
+        let BUILD_NUMBER = "6899";
         let _editorInitialized = false;
         let _domContentInitialized = false;
         let trapTab = true;
@@ -1107,13 +1083,6 @@
 
             // Menu actions
             document
-                .getElementById("menu-file")
-                .addEventListener("click", function (e) {
-                    if (typeof renderRecentFilesMenu === "function") {
-                        renderRecentFilesMenu();
-                    }
-                });
-            document
                 .getElementById("menu-file-new")
                 .addEventListener("click", function (e) {
                     newFile();
@@ -1200,14 +1169,15 @@
                     toggleFindReplace(false);
                     closeAllMenus();
                 });
-            document
-                .getElementById("menu-edit-goto")
-                .addEventListener("click", function () {
+            const btnGoto = document.getElementById("menu-edit-goto");
+            if (btnGoto) {
+                btnGoto.addEventListener("click", function () {
                     if (!this.hasAttribute("disabled")) {
                         showGoToDialog();
                         closeAllMenus();
                     }
                 });
+            }
 
             // Update all Edit menu items state
             function updateEditMenuStates() {

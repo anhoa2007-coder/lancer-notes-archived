@@ -531,7 +531,8 @@ input[type="radio"] {
 
 /* apply extra left offset only to items that may show a checkmark */
 .menu-dropdown-item.menu-checkable {
-    position: relative; /* contain absolutely positioned icon */
+    position: relative;
+    /* contain absolutely positioned icon */
     padding-left: calc(var(--space-md) + 16px + var(--space-sm));
 }
 
@@ -590,8 +591,8 @@ input[type="radio"] {
 }
 
 /* Direct child only — avoids every nested flyout opening when hovering a parent panel */
-.menu-dropdown-item-group:hover > .menu-submenu,
-.menu-dropdown-item-group:focus-within > .menu-submenu {
+.menu-dropdown-item-group:hover>.menu-submenu,
+.menu-dropdown-item-group:focus-within>.menu-submenu {
     visibility: visible;
     opacity: 1;
     transform: translateX(0);
@@ -610,8 +611,8 @@ input[type="radio"] {
     transform: translateX(10px);
 }
 
-.menu-dropdown-item-group:hover > .menu-submenu.open-left,
-.menu-dropdown-item-group:focus-within > .menu-submenu.open-left {
+.menu-dropdown-item-group:hover>.menu-submenu.open-left,
+.menu-dropdown-item-group:focus-within>.menu-submenu.open-left {
     transform: translateX(0);
 }
 
@@ -638,7 +639,6 @@ input[type="radio"] {
     display: flex;
     gap: 4px;
     padding-right: 12px;
-    border-right: var(--separator-thickness) solid var(--color-border-secondary);
 }
 
 .toolbar-group:last-child {
@@ -646,8 +646,9 @@ input[type="radio"] {
 }
 
 .toolbar-btn {
-    background-color: var(--color-bg-tertiary);
-    border: 1px solid var(--color-border-secondary);
+    background-color: transparent;
+    color: inherit;
+    border: none;
     padding: 6px var(--space-md);
     cursor: pointer;
     border-radius: var(--radius-sm);
@@ -660,7 +661,7 @@ input[type="radio"] {
 
 .toolbar-btn:hover {
     background-color: var(--color-bg-hover);
-    border-color: var(--color-border-dark);
+    border-color: transparent;
 }
 
 .toolbar-btn:active {
@@ -668,18 +669,18 @@ input[type="radio"] {
 }
 
 .toolbar-btn.active {
-    background-color: var(--color-accent-primary);
-    color: white;
-    border-color: var(--color-accent-hover);
+    background-color: transparent;
+    color: inherit;
+    border-color: transparent;
 }
 
 .toolbar-btn[disabled],
 .toolbar-btn[disabled]:hover,
 .toolbar-btn[disabled]:active {
     opacity: 1;
-    color: var(--color-text-disabled);
-    background-color: var(--color-bg-primary);
-    border-color: var(--color-border-light);
+    color: inherit;
+    background-color: transparent;
+    border-color: transparent;
     cursor: not-allowed;
 }
 
@@ -1118,8 +1119,8 @@ input[type="radio"] {
 .find-replace-bar .fr-btn {
     padding: 7px var(--space-md);
     min-height: 32px;
-    border: 1px solid var(--color-border-secondary);
-    background: var(--color-bg-tertiary);
+    border: none;
+    background: transparent;
     border-radius: var(--radius-md);
     cursor: pointer;
     white-space: nowrap;
@@ -1132,7 +1133,6 @@ input[type="radio"] {
 
 .find-replace-bar .fr-btn:hover {
     background: var(--color-bg-hover);
-    border-color: var(--color-border-dark);
 }
 
 #btn-find-prev,
@@ -1152,7 +1152,7 @@ input[type="radio"] {
     display: flex;
     align-items: center;
     justify-content: center;
-    line-height: 0; 
+    line-height: 0;
     border: none;
     background: transparent;
     font-weight: bold;
@@ -1801,11 +1801,11 @@ input[type="radio"] {
 /* ============================================
    ZOOM TOOLBAR
    ============================================ */
-  .zoom-toolbar {
-      position: fixed;
-      top: 70px;
-      left: 50%;
-      transform: translateX(-50%) translateY(0);
+.zoom-toolbar {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
     background: var(--color-find-replace-bg);
     border: 1px solid var(--color-border-secondary);
     border-radius: var(--radius-lg);
@@ -1818,29 +1818,29 @@ input[type="radio"] {
     opacity: 1;
     pointer-events: auto;
     font-size: 13px;
-      transition:
-          opacity var(--transition-fast) ease-out,
-          transform var(--transition-fast) cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
+    transition:
+        opacity var(--transition-fast) ease-out,
+        transform var(--transition-fast) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
 
-  .zoom-toolbar.is-bottom {
-      top: auto;
-      bottom: 24px;
-      transform: translateX(-50%) translateY(0);
-  }
-  
-  .zoom-toolbar.hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateX(-50%) translateY(-10px) scale(0.95);
-      transition:
-          opacity 0.15s ease-in,
-          transform 0.15s ease-in;
-  }
+.zoom-toolbar.is-bottom {
+    top: auto;
+    bottom: 24px;
+    transform: translateX(-50%) translateY(0);
+}
 
-  .zoom-toolbar.is-bottom.hidden {
-      transform: translateX(-50%) translateY(10px) scale(0.95);
-  }
+.zoom-toolbar.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(-10px) scale(0.95);
+    transition:
+        opacity 0.15s ease-in,
+        transform 0.15s ease-in;
+}
+
+.zoom-toolbar.is-bottom.hidden {
+    transform: translateX(-50%) translateY(10px) scale(0.95);
+}
 
 .zoom-toolbar-btn {
     width: 32px;
@@ -1851,11 +1851,11 @@ input[type="radio"] {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--color-border-secondary);
+    border: none;
     border-radius: var(--radius-md);
-    background: var(--color-bg-tertiary);
+    background: transparent;
     cursor: pointer;
-    color: var(--color-text-primary);
+    color: inherit;
     transition:
         background-color var(--transition-fast),
         border-color var(--transition-fast);
@@ -1863,7 +1863,7 @@ input[type="radio"] {
 
 .zoom-toolbar-btn:hover {
     background: var(--color-bg-hover);
-    border-color: var(--color-border-dark);
+    border-color: transparent;
 }
 
 .zoom-toolbar-btn:active {
@@ -1948,38 +1948,102 @@ input[type="radio"] {
 }
 
 /* ============================================
-   RECENT FILES MENU
+   GO TO LINE DIALOG (REDESIGNED)
    ============================================ */
-.recent-file-item {
-    display: flex;
-    justify-content: space-between;
+.goto-dialog-container {
+    display: none;
+    position: fixed;
+    left: 50%;
+    top: 56px; /* sits right under the toolbar with space for the arrow */
+    transform: translateX(-50%) translateY(-10px) scale(0.95);
+    background: var(--color-dialog-bg);
+    border: 1px solid var(--color-border-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 6px;
+    z-index: var(--z-dialog);
     align-items: center;
-    width: 100%;
-}
-
-.recent-file-name {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-right: var(--space-md);
-}
-
-.recent-file-time {
-    font-size: 11px;
-    color: var(--color-text-muted);
-    white-space: nowrap;
-}
-
-.recent-file-clear {
-    color: var(--color-danger-text) !important;
-}
-
-.recent-file-empty {
-    color: var(--color-text-muted);
+    gap: 6px;
+    opacity: 0;
     pointer-events: none;
-    font-style: normal;
-    font-weight: normal;
+    transition:
+        opacity var(--transition-fast) ease-out,
+        transform var(--transition-fast) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.goto-dialog-container::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent var(--color-border-secondary) transparent;
+}
+
+.goto-dialog-container::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent var(--color-dialog-bg) transparent;
+    margin-bottom: -1px;
+}
+
+.goto-dialog-container.open {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.goto-dialog-container input {
+    background-color: var(--color-input-bg);
+    color: var(--color-input-text);
+    border: 1px solid var(--color-border-secondary);
+    border-radius: var(--radius-md);
+    padding: 6px 10px;
+    font-size: 13px;
+    outline: none;
+    width: 130px;
+    transition: border-color var(--transition-fast);
+    /* Always show number spinner arrows */
+    appearance: textfield;
+    -moz-appearance: number-input;
+}
+
+.goto-dialog-container input:focus {
+    border-color: var(--color-accent-primary);
+}
+
+/* Webkit spinner buttons styled to match theme */
+.goto-dialog-container input[type=number]::-webkit-outer-spin-button,
+.goto-dialog-container input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: inner-spin-button;
+    opacity: 1;
+    cursor: pointer;
+}
+
+.goto-dialog-container button {
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.goto-dialog-container button:hover {
+    background-color: var(--color-bg-hover);
+    color: var(--color-text-primary);
 }
 
 /* ============================================
